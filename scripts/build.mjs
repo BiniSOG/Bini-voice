@@ -33,7 +33,9 @@ rmSync(join(extOut, 'studio', 'sw.js'), { force: true });
 // Optional zip for the Chrome Web Store
 try {
   execSync('zip -qr ../bini-voice-extension.zip .', { cwd: extOut, stdio: 'ignore' });
-  console.log('✓ dist/bini-voice-extension.zip');
+  // Also publish it with the website so it can be downloaded from the app
+  cpSync(join(dist, 'bini-voice-extension.zip'), join(appOut, 'bini-voice-extension.zip'));
+  console.log('✓ dist/bini-voice-extension.zip (also at dist/app/bini-voice-extension.zip)');
 } catch { /* zip not installed — fine */ }
 
 console.log('✓ dist/app        → serve this folder (PWA)');

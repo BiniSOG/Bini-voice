@@ -589,6 +589,7 @@
     $('#nsToggle').checked = !!s.noiseSuppression;
     $('#ecToggle').checked = !!s.echoCancellation;
     $('#extGroup').hidden = !IS_EXT;
+    $('#getExt').hidden = IS_EXT;
     $('#extEnabled').checked = !!s.enabled;
   }
 
