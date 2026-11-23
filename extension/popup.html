@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Bini Voice</title>
+  <link rel="stylesheet" href="studio/styles.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="popup">
+  <header class="p-head">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="wordmark">Bini<span>Voice</span></span>
+    </div>
+    <label class="switch" title="Apply voice on websites"><input type="checkbox" id="enabled"><span></span></label>
+  </header>
+
+  <section class="p-now card" id="now">
+    <div class="avatar" id="nowAvatar"></div>
+    <div class="p-now-text">
+      <div class="now-label" id="nowState">Active on websites</div>
+      <div class="p-now-name" id="nowName">—</div>
+      <div class="vc-tag" id="nowTag"></div>
+    </div>
+  </section>
+
+  <label class="intensity p-int">
+    <span>Intensity</span>
+    <input type="range" id="intensity" min="0" max="1.5" step="0.01" value="1">
+    <output id="intensityOut">100%</output>
+  </label>
+
+  <div class="segmented small" id="cats">
+    <button data-cat="female" class="active">Female</button>
+    <button data-cat="male">Male</button>
+    <button data-cat="character">Characters</button>
+    <button data-cat="custom">Mine</button>
+  </div>
+  <div class="p-grid" id="grid"></div>
+
+  <footer class="p-foot">
+    <button class="btn primary small" id="openStudio">Open Studio</button>
+    <p class="muted">Works on Meet, Discord, Zoom web & any site using your mic. Rejoin the call after switching on.</p>
+  </footer>
+
+  <script src="lib/presets.js"></script>
+  <script src="lib/store.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

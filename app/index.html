@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a12">
+  <meta name="description" content="Bini Voice — studio-grade real-time voice changer. Male, female, every age, characters and your own custom voices.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Bini Voice</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><div class="glow g1"></div><div class="glow g2"></div></div>
+
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="wordmark">Bini<span>Voice</span></span>
+      </div>
+      <button class="chip source-chip" id="sourceChip" data-goto="settings" aria-label="Your natural voice"></button>
+    </header>
+
+    <div class="layout">
+      <!-- Live stage (persistent) -->
+      <aside class="stage-wrap" id="stageWrap">
+        <section class="stage card" id="stage">
+          <div class="stage-top">
+            <span class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Ready</span></span>
+            <span class="engine-tag" id="engineTag"></span>
+          </div>
+          <div class="orb-zone">
+            <canvas id="viz" width="560" height="560" aria-hidden="true"></canvas>
+            <button class="orb" id="orb" aria-label="Start live voice">
+              <span class="orb-inner" id="orbIcon"></span>
+            </button>
+          </div>
+          <div class="now">
+            <div class="now-label" id="nowLabel">Now speaking as</div>
+            <h1 class="now-name" id="nowName">Sophia</h1>
+            <p class="now-tag" id="nowTag">Clear, airy and warm</p>
+          </div>
+          <div class="controls">
+            <button class="ctl" id="monitorBtn" aria-pressed="false" aria-label="Hear yourself"><span data-icon="headphones"></span><small>Monitor</small></button>
+            <button class="ctl rec" id="recBtn" aria-pressed="false" aria-label="Record"><span class="rec-dot"></span><small id="recLabel">Record</small></button>
+            <button class="ctl" id="stopBtn" aria-label="Stop"><span data-icon="power"></span><small>Stop</small></button>
+          </div>
+          <label class="intensity">
+            <span>Intensity</span>
+            <input type="range" id="intensity" min="0" max="1.5" step="0.01" value="1">
+            <output id="intensityOut">100%</output>
+          </label>
+        </section>
+      </aside>
+
+      <main class="views">
+        <!-- Voices -->
+        <section class="view active" id="view-voices" aria-label="Voices">
+          <div class="section-head">
+            <h2>Voice library</h2>
+            <span class="muted" id="voiceCount"></span>
+          </div>
+          <div class="segmented" id="catTabs" role="tablist"></div>
+          <div class="chips" id="ageChips"></div>
+          <div class="grid" id="voiceGrid"></div>
+        </section>
+
+        <!-- Studio -->
+        <section class="view" id="view-studio" aria-label="Voice studio">
+          <div class="section-head">
+            <h2 id="studioTitle">Create a voice</h2>
+            <button class="link" id="studioReset">Reset</button>
+          </div>
+          <div class="card studio-head">
+            <div class="avatar xl" id="studioAvatar"></div>
+            <div class="studio-meta">
+              <input class="text-input" id="studioName" maxlength="24" placeholder="Name your voice" value="My Voice">
+              <div class="swatches" id="swatches"></div>
+            </div>
+          </div>
+          <label class="field">
+            <span>Start from</span>
+            <select id="studioBase" class="select"></select>
+          </label>
+          <div id="studioGroups"></div>
+          <div class="studio-actions">
+            <button class="btn ghost" id="studioDelete" hidden><span data-icon="trash"></span>Delete</button>
+            <button class="btn primary" id="studioSave"><span data-icon="check"></span>Save voice</button>
+          </div>
+          <p class="hint">Tip: start the live stage to hear every slider change in real time — use headphones to avoid feedback.</p>
+        </section>
+
+        <!-- Library -->
+        <section class="view" id="view-library" aria-label="Recordings">
+          <div class="section-head">
+            <h2>Recordings</h2>
+            <label class="btn small ghost file-btn"><span data-icon="upload"></span>Import audio<input type="file" id="importFile" accept="audio/*" hidden></label>
+          </div>
+          <div id="recList" class="rec-list"></div>
+        </section>
+
+        <!-- Settings -->
+        <section class="view" id="view-settings" aria-label="Settings">
+          <div class="section-head"><h2>Settings</h2></div>
+
+          <div class="card setting-group" id="extGroup" hidden>
+            <div class="row">
+              <div><strong>Apply on websites</strong><p class="muted">Changes your mic on Meet, Discord, Zoom web & any site.</p></div>
+              <label class="switch"><input type="checkbox" id="extEnabled"><span></span></label>
+            </div>
+          </div>
+
+          <div class="card setting-group">
+            <h3>My natural voice</h3>
+            <p class="muted">Human voices are tuned to sound right whoever speaks. Tell us where you start from.</p>
+            <div class="segmented small" id="sourceSeg">
+              <button data-src="male">Male</button>
+              <button data-src="female">Female</button>
+              <button data-src="calibrated">Calibrated</button>
+            </div>
+            <div class="calib">
+              <button class="btn ghost" id="calibBtn"><span data-icon="sparkle"></span>Calibrate my voice</button>
+              <span class="muted" id="calibOut"></span>
+            </div>
+          </div>
+
+          <div class="card setting-group">
+            <h3>Audio</h3>
+            <div class="row">
+              <div><strong>Processing quality</strong><p class="muted">Low latency for calls, studio for recordings.</p></div>
+              <div class="segmented small inline" id="qualitySeg">
+                <button data-q="balanced">Live</button>
+                <button data-q="studio">Studio</button>
+              </div>
+            </div>
+            <div class="row">
+              <div><strong>Noise suppression</strong></div>
+              <label class="switch"><input type="checkbox" id="nsToggle"><span></span></label>
+            </div>
+            <div class="row">
+              <div><strong>Echo cancellation</strong></div>
+              <label class="switch"><input type="checkbox" id="ecToggle"><span></span></label>
+            </div>
+          </div>
+
+          <div class="card setting-group">
+            <h3>Appearance</h3>
+            <div class="segmented small" id="themeSeg">
+              <button data-theme-opt="dark">Dark</button>
+              <button data-theme-opt="light">Light</button>
+              <button data-theme-opt="system">System</button>
+            </div>
+          </div>
+
+          <div class="card setting-group about">
+            <h3>About</h3>
+            <p class="muted">Bini Voice runs entirely on your device. Your voice never leaves it — no servers, no uploads.</p>
+            <p class="muted">Engine: formant-preserving phase vocoder · v1.0.0</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="tabbar" id="tabbar">
+      <button class="tab active" data-view="voices"><span data-icon="grid"></span><span>Voices</span></button>
+      <button class="tab" data-view="studio"><span data-icon="sliders"></span><span>Studio</span></button>
+      <button class="tab" data-view="library"><span data-icon="folder"></span><span>Library</span></button>
+      <button class="tab" data-view="settings"><span data-icon="settings"></span><span>Settings</span></button>
+    </nav>
+  </div>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-grip"></div>
+      <h3 id="sheetTitle">Choose a voice</h3>
+      <div class="sheet-body" id="sheetBody"></div>
+    </div>
+  </div>
+
+  <div class="busy" id="busy" hidden><div class="spinner"></div><span id="busyText">Rendering…</span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="lib/dsp.js"></script>
+  <script src="lib/presets.js"></script>
+  <script src="lib/engine.js"></script>
+  <script src="lib/store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

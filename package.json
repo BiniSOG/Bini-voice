@@ -1,0 +1,13 @@
+{
+  "name": "bini-voice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time voice changer — mobile PWA and Chrome extension",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "serve": "npm run build && npx --yes http-server dist/app -p 5173 -c-1"
+  },
+  "license": "MIT"
+}
