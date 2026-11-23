@@ -1,5 +1,5 @@
 /* Bini Voice — offline app shell */
-var CACHE = 'bini-voice-v3';
+var CACHE = 'bini-voice-v4';
 var ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'lib/dsp.js', 'lib/presets.js', 'lib/engine.js', 'lib/store.js', 'lib/worklet.js',
   'icons/icon-192.png', 'icons/icon-512.png'];

@@ -24,6 +24,7 @@
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.5M8.2 13.2l7.6 4.5"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/>',
     wand: '<path d="M15 4V2M15 10V8M11 6h2M17 6h2M4 20l10-10M18.5 2.5l1 1"/>',
@@ -441,7 +442,11 @@
         colors: voice.colors, created: started, duration: (Date.now() - started) / 1000,
         blob: new Blob(chunks, { type: type }), raw: new Blob(rawChunks, { type: type })
       };
-      DB.put(item).then(function () { toast('Saved to Library'); renderLibrary(); });
+      // Store the voiced take as WAV so it can be shared instantly (Telegram, WhatsApp…)
+      decodeBlob(item.blob).then(function (buf) { item.blob = Engine.toWav(buf); item.duration = buf.duration; })
+        .catch(function () {})
+        .then(function () { return DB.put(item); })
+        .then(function () { toast('Saved to Library'); renderLibrary(); });
     };
     rec.onstop = finish; raw.onstop = finish;
     rec.start(250); raw.start(250);
@@ -481,6 +486,7 @@
         '<div style="min-width:0"><div class="rec-title">' + esc(r.name) + '</div><div class="rec-meta">' + esc(r.voiceName) + ' · ' + fmtTime(r.duration) + ' · ' + d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + '</div><div class="rec-progress"><i></i></div></div>' +
         '<div class="rec-actions">' +
         '<button class="icon-btn" data-revoice="' + r.id + '" aria-label="Change voice" title="Change voice">' + icon('wand') + '</button>' +
+        (navigator.share ? '<button class="icon-btn" data-share="' + r.id + '" aria-label="Share" title="Share to Telegram, WhatsApp…">' + icon('share') + '</button>' : '') +
         '<button class="icon-btn" data-dl="' + r.id + '" aria-label="Download" title="Download WAV">' + icon('download') + '</button>' +
         '<button class="icon-btn" data-del="' + r.id + '" aria-label="Delete" title="Delete">' + icon('trash') + '</button>' +
         '</div></div>';
@@ -515,11 +521,30 @@
       var wav = r.blob.type === 'audio/wav' ? r.blob : Engine.toWav(await decodeBlob(r.blob));
       var a = document.createElement('a');
       a.href = URL.createObjectURL(wav);
-      a.download = r.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.wav';
+      a.download = fileName(r);
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
     } catch (e) { toast('Could not export: ' + e.message); }
     busy(false);
+  }
+
+  function fileName(r) { return (r.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'bini-voice') + '.wav'; }
+
+  async function shareRec(id) {
+    var r = recById(id); if (!r) return;
+    if (r.blob.type !== 'audio/wav') {
+      // Older take: convert once, then the next tap shares instantly
+      busy(true, 'Preparing audio…');
+      try { r.blob = Engine.toWav(await decodeBlob(r.blob)); await DB.put(r); } catch (e) { busy(false); toast('Could not prepare audio'); return; }
+      busy(false);
+    }
+    var file = new File([r.blob], fileName(r), { type: 'audio/wav' });
+    if (!navigator.canShare || !navigator.canShare({ files: [file] })) { downloadRec(id); return; }
+    try {
+      await navigator.share({ files: [file], title: r.name });
+    } catch (e) {
+      if (e && e.name === 'NotAllowedError') toast('Ready — tap Share again');
+    }
   }
 
   async function renderWithVoice(sourceBlob, voice, name) {
@@ -693,6 +718,7 @@
     $('#recList').addEventListener('click', function (e) {
       var b;
       if ((b = e.target.closest('[data-play]'))) togglePlay(b.getAttribute('data-play'));
+      else if ((b = e.target.closest('[data-share]'))) shareRec(b.getAttribute('data-share'));
       else if ((b = e.target.closest('[data-dl]'))) downloadRec(b.getAttribute('data-dl'));
       else if ((b = e.target.closest('[data-del]'))) {
         var id = b.getAttribute('data-del');
