@@ -24,6 +24,7 @@
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/>',
     wand: '<path d="M15 4V2M15 10V8M11 6h2M17 6h2M4 20l10-10M18.5 2.5l1 1"/>',
     wave: '<path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/>',
@@ -751,6 +752,56 @@
   }
 
   // ---------------------------------------------------------------- boot
+  // ---------------------------------------------------------------- install (PWA)
+  var installEvt = null;
+  var isStandalone = function () { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; };
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function dismissedInstall() { try { return localStorage.getItem('bini.installDismissed') === '1'; } catch (e) { return false; } }
+  function showInstallBanner() {
+    if (IS_EXT || isStandalone() || dismissedInstall()) return;
+    $('#installBanner').hidden = false;
+  }
+  function installHelp() {
+    var steps;
+    if (isIOS) {
+      steps = ['Open this page in <b>Safari</b> (other iPhone browsers can’t install apps)', 'Tap the <b>Share</b> button at the bottom', 'Scroll and tap <b>Add to Home Screen</b>, then <b>Add</b>'];
+    } else if (/android/i.test(navigator.userAgent)) {
+      steps = ['Tap the <b>⋮</b> menu at the top right of Chrome', 'Tap <b>Add to home screen</b> (or <b>Install app</b>)', 'Choose <b>Install</b> — not “Create shortcut” — and confirm', 'Don’t see Install? Reload this page once and try again'];
+    } else {
+      steps = ['Click the <b>install icon</b> at the right end of Chrome’s address bar', 'Or open the <b>⋮</b> menu → <b>Cast, save and share</b> → <b>Install page as app</b>', 'Click <b>Install</b>'];
+    }
+    $('#sheetTitle').textContent = 'Install Bini Voice';
+    $('#sheetBody').innerHTML = '<ol class="steps">' + steps.map(function (t) { return '<li><span>' + t + '</span></li>'; }).join('') + '</ol>';
+    $('#sheet').hidden = false;
+    openVoicePicker.cb = null;
+  }
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    installEvt = e;
+    showInstallBanner();
+  });
+  window.addEventListener('appinstalled', function () {
+    installEvt = null; $('#installBanner').hidden = true; toast('Installed — find Bini Voice on your home screen');
+  });
+  function bindInstall() {
+    $('#installBtn').addEventListener('click', async function () {
+      if (installEvt) {
+        installEvt.prompt();
+        var r = await installEvt.userChoice;
+        installEvt = null;
+        if (r && r.outcome === 'accepted') $('#installBanner').hidden = true;
+      } else {
+        installHelp();
+      }
+    });
+    $('#installClose').addEventListener('click', function () {
+      $('#installBanner').hidden = true;
+      try { localStorage.setItem('bini.installDismissed', '1'); } catch (e) {}
+    });
+    // Show on mobile even if Chrome hasn't offered its prompt yet (falls back to instructions)
+    if (/android|iphone|ipad|ipod/i.test(navigator.userAgent) || isIOS) showInstallBanner();
+  }
+
   async function boot() {
     S.settings = await Store.get('bini.settings');
     S.custom = (await Store.get('bini.customVoices')) || [];
@@ -760,6 +811,7 @@
     S.studio = freshStudio();
     renderStage();
     bind();
+    bindInstall();
     requestAnimationFrame(drawViz);
     var hash = location.hash.replace('#', '');
     if (['voices', 'studio', 'library', 'settings'].indexOf(hash) >= 0) goto(hash);
